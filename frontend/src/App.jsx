@@ -14,6 +14,8 @@ import SaleDetail from './pages/SaleDetail'
 import Inventory from './pages/Inventory'
 import Payments from './pages/Payments'
 import Reports from './pages/Reports'
+import Users from './pages/Users'
+import UserForm from './pages/UserForm'
 
 function App() {
   return (
@@ -47,6 +49,12 @@ function App() {
           <Route path="inventory" element={<Inventory />} />
           <Route path="payments" element={<Payments />} />
           <Route path="reports" element={<Reports />} />
+          
+          <Route path="users">
+            <Route index element={<Users />} />
+            <Route path="new" element={<UserForm />} />
+            <Route path=":id/edit" element={<UserForm />} />
+          </Route>
         </Route>
         
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

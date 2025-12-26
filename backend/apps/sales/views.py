@@ -29,6 +29,10 @@ class SaleViewSet(viewsets.ModelViewSet):
         """Filter by date range if provided"""
         queryset = super().get_queryset()
         
+        # Cashiers can only see their own sales
+        if self.request.user.role == 'cashier':
+            queryset = queryset.filter(cashier=self.request.user)
+        
         # Filter by date range
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')

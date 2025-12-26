@@ -7,6 +7,14 @@ export const authAPI = {
   getCurrentUser: () => api.get('/auth/me/'),
 }
 
+export const usersAPI = {
+  getAll: (params) => api.get('/users/', { params }),
+  getById: (id) => api.get(`/users/${id}/`),
+  create: (data) => api.post('/users/', data),
+  update: (id, data) => api.put(`/users/${id}/`, data),
+  delete: (id) => api.delete(`/users/${id}/`),
+}
+
 export const productsAPI = {
   getAll: (params) => api.get('/products/', { params }),
   getById: (id) => api.get(`/products/${id}/`),

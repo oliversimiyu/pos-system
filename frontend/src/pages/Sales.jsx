@@ -4,8 +4,10 @@ import { salesAPI } from '../services/api/endpoints'
 import { Eye, Search, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
+import { useAuth } from '../context/AuthContext'
 
 export default function Sales() {
+  const { user } = useAuth()
   const [sales, setSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -59,7 +61,12 @@ export default function Sales() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Sales</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Sales</h1>
+          {user?.role === 'cashier' && (
+            <p className="text-sm text-gray-500">Showing your sales only</p>
+          )}
+        </div>
       </div>
 
       <div className="card mb-6">

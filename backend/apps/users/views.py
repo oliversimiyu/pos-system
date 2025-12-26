@@ -8,9 +8,15 @@ from .models import User
 from .serializers import UserSerializer, UserCreateSerializer, LoginSerializer
 
 
+class IsAdmin(IsAuthenticated):
+    """Permission class for admin-only access"""
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and request.user.role == 'admin'
+
+
 class UserViewSet(viewsets.ModelViewSet):
     """ViewSet for User CRUD operations"""
-    queryset = User.objects.all()
+    queryset = User.objects.all().order_by('-created_at')
     serializer_class = UserSerializer
     
     def get_serializer_class(self):
@@ -19,9 +25,20 @@ class UserViewSet(viewsets.ModelViewSet):
         return UserSerializer
     
     def get_permissions(self):
-        if self.action in ['create', 'login']:
+        if self.action == 'login':
             return [AllowAny()]
+        elif self.action in ['list', 'retrieve', 'create', 'update', 'partial_update', 'destroy']:
+            # Only admins can manage users
+            return [IsAdmin()]
         return [IsAuthenticated()]
+    
+    def list(self, request, *args, **kwargs):
+        """List all users - admin only"""
+        # Check if user is admin
+        if not hasattr(request.user, 'role') or request.user.role != 'admin':
+            return Response({'detail': 'Permission denied. Admin access required.'}, 
+                          status=status.HTTP_403_FORBIDDEN)
+        return super().list(request, *args, **kwargs)
     
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def login(self, request):
