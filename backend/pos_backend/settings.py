@@ -73,16 +73,25 @@ TEMPLATES = [
 WSGI_APPLICATION = 'pos_backend.wsgi.application'
 
 # Database
+# Use SQLite for development, PostgreSQL for production
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='pos_db'),
-        'USER': config('DB_USER', default='postgres'),
-        'PASSWORD': config('DB_PASSWORD', default='postgres'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# Uncomment below for PostgreSQL (production)
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': config('DB_NAME', default='pos_db'),
+#         'USER': config('DB_USER', default='postgres'),
+#         'PASSWORD': config('DB_PASSWORD', default='postgres'),
+#         'HOST': config('DB_HOST', default='localhost'),
+#         'PORT': config('DB_PORT', default='5432'),
+#     }
+# }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
