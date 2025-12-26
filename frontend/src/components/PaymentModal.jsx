@@ -61,13 +61,23 @@ export default function PaymentModal({ saleId, total, onClose, onComplete }) {
           amount: total,
         })
 
-        if (response.data.status === 'pending') {
+        console.log('Payment initiated:', response.data)
+
+        // Check if payment completed immediately (simulation mode)
+        if (response.data.status === 'success') {
+          toast.success('Payment confirmed!')
+          onComplete({ method: selectedMethod, amount: total })
+          return
+        }
+
+        if (response.data.status === 'pending' || response.data.status === 'processing') {
           toast.loading('Payment initiated. Waiting for confirmation...')
           // Poll for payment status
           const checkStatus = setInterval(async () => {
             try {
               const verifyResponse = await paymentsAPI.verify(response.data.id)
-              if (verifyResponse.data.status === 'completed') {
+              console.log('Payment status:', verifyResponse.data.status)
+              if (verifyResponse.data.status === 'success') {
                 clearInterval(checkStatus)
                 toast.dismiss()
                 toast.success('Payment confirmed!')
@@ -114,6 +124,7 @@ export default function PaymentModal({ saleId, total, onClose, onComplete }) {
           amount: total,
         })
 
+        console.log('Card payment response:', response.data)
         toast.success('Card payment processed')
         onComplete({ method: 'card', amount: total })
       } catch (error) {

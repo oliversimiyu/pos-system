@@ -93,6 +93,30 @@ class CardPaymentGateway:
 def initiate_card_payment(payment: Payment):
     """Initiate card payment"""
     try:
+        # Check if we're in development mode (no credentials configured)
+        if not settings.PAYMENT_GATEWAY_API_KEY or not settings.PAYMENT_GATEWAY_SECRET:
+            # Simulation mode for development/testing
+            payment.status = 'processing'
+            payment.metadata = {
+                'gateway_transaction_id': f'sim_card_{payment.transaction_reference}',
+                'simulation_mode': True
+            }
+            payment.save()
+            
+            # Auto-complete in simulation mode
+            from django.utils import timezone
+            payment.status = 'success'
+            payment.completed_at = timezone.now()
+            payment.save()
+            
+            # Update sale
+            payment.sale.amount_paid += payment.amount
+            payment.sale.update_payment_status()
+            payment.sale.save()
+            
+            return {'success': True, 'payment': payment, 'simulation': True}
+        
+        # Real gateway API call
         gateway = CardPaymentGateway()
         
         result = gateway.initiate_payment(

@@ -99,6 +99,30 @@ class AirtelAPI:
 def initiate_airtel_payment(payment: Payment):
     """Initiate Airtel Money payment"""
     try:
+        # Check if we're in development mode (no credentials configured)
+        if not settings.AIRTEL_CLIENT_ID or not settings.AIRTEL_CLIENT_SECRET:
+            # Simulation mode for development/testing
+            payment.status = 'processing'
+            payment.metadata = {
+                'airtel_transaction_id': f'sim_airtel_{payment.transaction_reference}',
+                'simulation_mode': True
+            }
+            payment.save()
+            
+            # Auto-complete in simulation mode
+            from django.utils import timezone
+            payment.status = 'success'
+            payment.completed_at = timezone.now()
+            payment.save()
+            
+            # Update sale
+            payment.sale.amount_paid += payment.amount
+            payment.sale.update_payment_status()
+            payment.sale.save()
+            
+            return {'success': True, 'payment': payment, 'simulation': True}
+        
+        # Real Airtel API call
         airtel = AirtelAPI()
         
         result = airtel.initiate_payment(

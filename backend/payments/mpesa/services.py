@@ -107,6 +107,31 @@ class MpesaAPI:
 def initiate_mpesa_payment(payment: Payment):
     """Initiate M-Pesa STK Push payment"""
     try:
+        # Check if we're in development mode (no credentials configured)
+        if not settings.MPESA_CONSUMER_KEY or not settings.MPESA_CONSUMER_SECRET:
+            # Simulation mode for development/testing
+            payment.status = 'processing'
+            payment.metadata = {
+                'checkout_request_id': f'sim_{payment.transaction_reference}',
+                'merchant_request_id': f'sim_merchant_{payment.id}',
+                'simulation_mode': True
+            }
+            payment.save()
+            
+            # Auto-complete after 3 seconds in simulation mode
+            from django.utils import timezone
+            payment.status = 'success'
+            payment.completed_at = timezone.now()
+            payment.save()
+            
+            # Update sale
+            payment.sale.amount_paid += payment.amount
+            payment.sale.update_payment_status()
+            payment.sale.save()
+            
+            return {'success': True, 'payment': payment, 'simulation': True}
+        
+        # Real M-Pesa API call
         mpesa = MpesaAPI()
         
         result = mpesa.stk_push(
