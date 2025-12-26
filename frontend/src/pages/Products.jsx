@@ -184,7 +184,7 @@ export default function Products() {
                     <td>
                       <div className="flex gap-2">
                         <Link
-                          to={`/products/${product.id}`}
+                          to={`/products/${product.id}/edit`}
                           className="text-primary-600 hover:text-primary-700"
                         >
                           <Edit className="w-4 h-4" />

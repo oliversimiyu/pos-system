@@ -10,6 +10,7 @@ import POSCheckout from './pages/POSCheckout'
 import Products from './pages/Products'
 import ProductForm from './pages/ProductForm'
 import Sales from './pages/Sales'
+import SaleDetail from './pages/SaleDetail'
 import Inventory from './pages/Inventory'
 import Payments from './pages/Payments'
 import Reports from './pages/Reports'
@@ -40,6 +41,7 @@ function App() {
           
           <Route path="sales">
             <Route index element={<Sales />} />
+            <Route path=":id" element={<SaleDetail />} />
           </Route>
           
           <Route path="inventory" element={<Inventory />} />
