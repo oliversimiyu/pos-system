@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { productsAPI } from '../services/api/endpoints'
-import { Plus, Search, Edit, Trash2, AlertTriangle } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, AlertTriangle, FolderPlus } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Products() {
@@ -10,6 +10,8 @@ export default function Products() {
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [categories, setCategories] = useState([])
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [newCategory, setNewCategory] = useState({ name: '', description: '' })
 
   useEffect(() => {
     fetchProducts()
@@ -57,14 +59,41 @@ export default function Products() {
     }
   }
 
+  const handleCreateCategory = async (e) => {
+    e.preventDefault()
+    if (!newCategory.name.trim()) {
+      toast.error('Category name is required')
+      return
+    }
+
+    try {
+      await productsAPI.createCategory(newCategory)
+      toast.success('Category created successfully')
+      setNewCategory({ name: '', description: '' })
+      setShowCategoryModal(false)
+      fetchCategories()
+    } catch (error) {
+      toast.error('Failed to create category')
+    }
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-        <Link to="/products/new" className="btn btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Add Product
-        </Link>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowCategoryModal(true)}
+            className="btn btn-secondary flex items-center gap-2"
+          >
+            <FolderPlus className="w-4 h-4" />
+            New Category
+          </button>
+          <Link to="/products/new" className="btn btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Add Product
+          </Link>
+        </div>
       </div>
 
       <div className="card mb-6">
@@ -172,6 +201,78 @@ export default function Products() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Category Creation Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold">Create Category</h2>
+              <button
+                onClick={() => {
+                  setShowCategoryModal(false)
+                  setNewCategory({ name: '', description: '' })
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCategory} className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newCategory.name}
+                    onChange={(e) =>
+                      setNewCategory({ ...newCategory, name: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="e.g., Beverages, Electronics"
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description (Optional)
+                  </label>
+                  <textarea
+                    value={newCategory.description}
+                    onChange={(e) =>
+                      setNewCategory({ ...newCategory, description: e.target.value })
+                    }
+                    rows="3"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="Brief description of the category"
+                  ></textarea>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button type="submit" className="btn btn-primary flex-1">
+                  Create Category
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCategoryModal(false)
+                    setNewCategory({ name: '', description: '' })
+                  }}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
