@@ -79,9 +79,10 @@ class SaleCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sale
         fields = [
-            'customer_name', 'customer_phone', 'discount',
-            'amount_paid', 'notes', 'items'
+            'id', 'sale_number', 'customer_name', 'customer_phone', 'discount',
+            'amount_paid', 'notes', 'items', 'total', 'subtotal', 'status', 'payment_status'
         ]
+        read_only_fields = ['id', 'sale_number', 'total', 'subtotal', 'status', 'payment_status']
     
     def validate_items(self, value):
         """Ensure at least one item"""

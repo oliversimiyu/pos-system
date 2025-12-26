@@ -16,8 +16,8 @@ export default function ProductForm() {
     category: '',
     price: '',
     cost_price: '',
-    stock_quantity: '',
-    reorder_level: '',
+    stock: '',
+    low_stock_threshold: '',
     description: '',
   })
 
@@ -196,8 +196,8 @@ export default function ProductForm() {
               </label>
               <input
                 type="number"
-                name="stock_quantity"
-                value={formData.stock_quantity}
+                name="stock"
+                value={formData.stock}
                 onChange={handleChange}
                 required
                 min="0"
@@ -207,12 +207,12 @@ export default function ProductForm() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reorder Level
+                Low Stock Threshold
               </label>
               <input
                 type="number"
-                name="reorder_level"
-                value={formData.reorder_level}
+                name="low_stock_threshold"
+                value={formData.low_stock_threshold}
                 onChange={handleChange}
                 min="0"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"

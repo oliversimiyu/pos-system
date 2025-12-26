@@ -12,6 +12,7 @@ export default function POSCheckout() {
   const [loading, setLoading] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
   const [cartTotal, setCartTotal] = useState(0)
+  const [saleId, setSaleId] = useState(null)
   const barcodeInputRef = useRef(null)
 
   useEffect(() => {
@@ -59,14 +60,14 @@ export default function POSCheckout() {
   }
 
   const addToCart = (product) => {
-    if (product.stock_quantity <= 0) {
+    if (product.stock <= 0) {
       toast.error('Product out of stock')
       return
     }
 
     const existing = cart.find((item) => item.id === product.id)
     if (existing) {
-      if (existing.quantity >= product.stock_quantity) {
+      if (existing.quantity >= product.stock) {
         toast.error('Insufficient stock')
         return
       }
@@ -80,7 +81,7 @@ export default function POSCheckout() {
 
   const updateQuantity = (productId, newQuantity) => {
     const product = cart.find((item) => item.id === productId)
-    if (newQuantity > product.stock_quantity) {
+    if (newQuantity > product.stock) {
       toast.error('Insufficient stock')
       return
     }
@@ -104,29 +105,38 @@ export default function POSCheckout() {
     setBarcode('')
   }
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) {
       toast.error('Cart is empty')
       return
     }
-    setShowPayment(true)
-  }
-
-  const handlePaymentComplete = async (paymentData) => {
+    
+    // Create sale first with pending payment status
     try {
       const saleData = {
         items: cart.map((item) => ({
           product: item.id,
           quantity: item.quantity,
-          price: item.price,
         })),
-        payment_method: paymentData.method,
-        amount_paid: paymentData.amount,
+        amount_paid: 0, // Will be updated when payment completes
       }
 
+      console.log('Creating sale with data:', saleData)
       const response = await salesAPI.create(saleData)
-      toast.success(`Sale completed! Receipt #${response.data.receipt_number}`)
+      console.log('Sale created:', response.data)
+      setSaleId(response.data.id)
+      setShowPayment(true)
+    } catch (error) {
+      console.error('Sale creation error:', error.response?.data)
+      // Error is already shown by the interceptor
+    }
+  }
+
+  const handlePaymentComplete = async (paymentData) => {
+    try {
+      toast.success(`Sale completed! Receipt #${paymentData.receipt_number || saleId}`)
       clearCart()
+      setSaleId(null)
       setShowPayment(false)
     } catch (error) {
       toast.error('Failed to complete sale')
@@ -195,7 +205,7 @@ export default function POSCheckout() {
                       Ksh {product.price}
                     </span>
                     <span className="text-sm text-gray-500">
-                      Stock: {product.stock_quantity}
+                      Stock: {product.stock}
                     </span>
                   </div>
                 </div>
@@ -295,8 +305,12 @@ export default function POSCheckout() {
       {/* Payment Modal */}
       {showPayment && (
         <PaymentModal
+          saleId={saleId}
           total={cartTotal}
-          onClose={() => setShowPayment(false)}
+          onClose={() => {
+            setShowPayment(false)
+            setSaleId(null)
+          }}
           onComplete={handlePaymentComplete}
         />
       )}

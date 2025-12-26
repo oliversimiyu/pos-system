@@ -163,16 +163,16 @@ export default function Products() {
                     <td>
                       <span
                         className={`${
-                          product.stock_quantity <= product.reorder_level
+                          product.stock <= product.low_stock_threshold
                             ? 'text-red-600 font-semibold'
                             : ''
                         }`}
                       >
-                        {product.stock_quantity}
+                        {product.stock}
                       </span>
                     </td>
                     <td>
-                      {product.stock_quantity <= product.reorder_level ? (
+                      {product.stock <= product.low_stock_threshold ? (
                         <span className="badge badge-error flex items-center gap-1 w-fit">
                           <AlertTriangle className="w-3 h-3" />
                           Low Stock

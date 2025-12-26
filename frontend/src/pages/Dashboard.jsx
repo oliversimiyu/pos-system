@@ -150,9 +150,9 @@ export default function Dashboard() {
                     <td className="font-medium">{product.name}</td>
                     <td>{product.sku}</td>
                     <td className="text-red-600 font-semibold">
-                      {product.stock_quantity}
+                      {product.stock}
                     </td>
-                    <td>{product.reorder_level}</td>
+                    <td>{product.low_stock_threshold}</td>
                     <td>
                       <span className="badge badge-error">Reorder Required</span>
                     </td>

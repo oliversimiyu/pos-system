@@ -4,21 +4,23 @@ import { paymentsAPI } from '../services/api/endpoints'
 import toast from 'react-hot-toast'
 
 const PAYMENT_METHODS = [
-  { id: 'CASH', label: 'Cash', icon: Banknote },
-  { id: 'MPESA', label: 'M-Pesa', icon: Smartphone },
-  { id: 'AIRTEL', label: 'Airtel Money', icon: Smartphone },
-  { id: 'CARD', label: 'Card', icon: CreditCard },
+  { id: 'cash', label: 'Cash', icon: Banknote },
+  { id: 'mpesa', label: 'M-Pesa', icon: Smartphone },
+  { id: 'airtel', label: 'Airtel Money', icon: Smartphone },
+  { id: 'card', label: 'Card', icon: CreditCard },
 ]
 
-export default function PaymentModal({ total, onClose, onComplete }) {
-  const [selectedMethod, setSelectedMethod] = useState('CASH')
+export default function PaymentModal({ saleId, total, onClose, onComplete }) {
+  const [selectedMethod, setSelectedMethod] = useState('cash')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [cardNumber, setCardNumber] = useState('')
   const [amountPaid, setAmountPaid] = useState(total)
   const [processing, setProcessing] = useState(false)
 
   const handlePayment = async () => {
-    if (selectedMethod === 'CASH') {
+    console.log('Payment initiated with saleId:', saleId, 'method:', selectedMethod)
+    
+    if (selectedMethod === 'cash') {
       if (amountPaid < total) {
         toast.error('Amount paid is less than total')
         return
@@ -27,11 +29,24 @@ export default function PaymentModal({ total, onClose, onComplete }) {
       if (change > 0) {
         toast.success(`Change: Ksh ${change.toFixed(2)}`)
       }
-      onComplete({ method: 'CASH', amount: amountPaid })
+      
+      // Update sale with cash payment
+      try {
+        const paymentData = {
+          sale: saleId,
+          method: 'cash',
+          amount: total,
+        }
+        console.log('Sending payment data:', paymentData)
+        const response = await paymentsAPI.initiate(paymentData)
+        onComplete({ method: 'cash', amount: amountPaid })
+      } catch (error) {
+        console.error('Cash payment error:', error.response?.data)
+      }
       return
     }
 
-    if (selectedMethod === 'MPESA' || selectedMethod === 'AIRTEL') {
+    if (selectedMethod === 'mpesa' || selectedMethod === 'airtel') {
       if (!phoneNumber || phoneNumber.length < 10) {
         toast.error('Please enter a valid phone number')
         return
@@ -40,6 +55,7 @@ export default function PaymentModal({ total, onClose, onComplete }) {
       setProcessing(true)
       try {
         const response = await paymentsAPI.initiate({
+          sale: saleId,
           method: selectedMethod,
           phone_number: phoneNumber,
           amount: total,
@@ -83,7 +99,7 @@ export default function PaymentModal({ total, onClose, onComplete }) {
       return
     }
 
-    if (selectedMethod === 'CARD') {
+    if (selectedMethod === 'card') {
       if (!cardNumber || cardNumber.length < 16) {
         toast.error('Please enter a valid card number')
         return
@@ -92,13 +108,14 @@ export default function PaymentModal({ total, onClose, onComplete }) {
       setProcessing(true)
       try {
         const response = await paymentsAPI.initiate({
-          method: 'CARD',
+          sale: saleId,
+          method: 'card',
           card_number: cardNumber,
           amount: total,
         })
 
         toast.success('Card payment processed')
-        onComplete({ method: 'CARD', amount: total })
+        onComplete({ method: 'card', amount: total })
       } catch (error) {
         toast.error('Card payment failed')
       } finally {
@@ -152,7 +169,7 @@ export default function PaymentModal({ total, onClose, onComplete }) {
             </div>
           </div>
 
-          {selectedMethod === 'CASH' && (
+          {selectedMethod === 'cash' && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Amount Paid
@@ -173,7 +190,7 @@ export default function PaymentModal({ total, onClose, onComplete }) {
             </div>
           )}
 
-          {(selectedMethod === 'MPESA' || selectedMethod === 'AIRTEL') && (
+          {(selectedMethod === 'mpesa' || selectedMethod === 'airtel') && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Phone Number
@@ -192,7 +209,7 @@ export default function PaymentModal({ total, onClose, onComplete }) {
             </div>
           )}
 
-          {selectedMethod === 'CARD' && (
+          {selectedMethod === 'card' && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Card Number

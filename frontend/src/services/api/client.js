@@ -32,10 +32,34 @@ api.interceptors.response.use(
       window.location.href = '/login'
     }
     
-    const message = error.response?.data?.error ||
-                   error.response?.data?.detail ||
-                   error.response?.data?.message ||
-                   'An error occurred'
+    // Log full error for debugging
+    console.error('API Error:', error.response?.data)
+    
+    // Extract error message from various possible formats
+    let message = 'An error occurred'
+    const data = error.response?.data
+    
+    if (data) {
+      if (typeof data === 'string') {
+        message = data
+      } else if (data.error) {
+        message = data.error
+      } else if (data.detail) {
+        message = data.detail
+      } else if (data.message) {
+        message = data.message
+      } else if (data.items) {
+        // Handle validation errors for nested fields like items
+        message = JSON.stringify(data.items)
+      } else {
+        // Show first validation error
+        const firstKey = Object.keys(data)[0]
+        if (firstKey && data[firstKey]) {
+          const errorValue = Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey]
+          message = `${firstKey}: ${errorValue}`
+        }
+      }
+    }
     
     toast.error(message)
     return Promise.reject(error)
