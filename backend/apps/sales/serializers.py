@@ -56,6 +56,7 @@ class SaleSerializer(serializers.ModelSerializer):
     """Serializer for sales"""
     items = SaleItemSerializer(many=True, read_only=True)
     cashier_name = serializers.CharField(source='cashier.username', read_only=True)
+    payment_method = serializers.SerializerMethodField()
     
     class Meta:
         model = Sale
@@ -63,13 +64,21 @@ class SaleSerializer(serializers.ModelSerializer):
             'id', 'sale_number', 'cashier', 'cashier_name',
             'customer_name', 'customer_phone',
             'subtotal', 'tax_amount', 'discount', 'total',
-            'amount_paid', 'change', 'status', 'payment_status',
+            'amount_paid', 'change', 'status', 'payment_status', 'payment_method',
             'notes', 'items', 'created_at', 'updated_at', 'completed_at'
         ]
         read_only_fields = [
             'id', 'sale_number', 'subtotal', 'tax_amount', 'total',
             'change', 'payment_status', 'created_at', 'updated_at'
         ]
+    
+    def get_payment_method(self, obj):
+        """Get payment method from successful payment"""
+        # Get the first successful payment for this sale
+        successful_payment = obj.payments.filter(status='success').first()
+        if successful_payment:
+            return successful_payment.get_method_display()
+        return 'N/A'
 
 
 class SaleCreateSerializer(serializers.ModelSerializer):

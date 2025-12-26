@@ -35,8 +35,10 @@ export default function Payments() {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'completed':
+      case 'success':
         return <CheckCircle className="w-4 h-4 text-green-600" />
+      case 'processing':
+        return <Clock className="w-4 h-4 text-blue-600" />
       case 'pending':
         return <Clock className="w-4 h-4 text-yellow-600" />
       case 'failed':
@@ -49,10 +51,11 @@ export default function Payments() {
   const getStatusBadge = (status) => {
     const badges = {
       pending: 'badge-warning',
-      completed: 'badge-success',
+      processing: 'badge-secondary',
+      success: 'badge-success',
       failed: 'badge-error',
     }
-    return `badge ${badges[status] || ''}`
+    return `badge ${badges[status] || 'badge-secondary'}`
   }
 
   return (
@@ -73,10 +76,10 @@ export default function Payments() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             >
               <option value="">All Methods</option>
-              <option value="CASH">Cash</option>
-              <option value="MPESA">M-Pesa</option>
-              <option value="AIRTEL">Airtel Money</option>
-              <option value="CARD">Card</option>
+              <option value="cash">Cash</option>
+              <option value="mpesa">M-Pesa</option>
+              <option value="airtel">Airtel Money</option>
+              <option value="card">Card</option>
             </select>
           </div>
           <div>
@@ -90,7 +93,8 @@ export default function Payments() {
             >
               <option value="">All Statuses</option>
               <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
+              <option value="processing">Processing</option>
+              <option value="success">Success</option>
               <option value="failed">Failed</option>
             </select>
           </div>
@@ -124,12 +128,18 @@ export default function Payments() {
               <tbody>
                 {payments.map((payment) => (
                   <tr key={payment.id}>
-                    <td className="font-mono text-sm">{payment.transaction_id}</td>
+                    <td className="font-mono text-sm">{payment.transaction_reference}</td>
                     <td>
-                      <span className="badge badge-secondary">{payment.method}</span>
+                      <span className="badge badge-secondary">
+                        {payment.method === 'mpesa' ? 'M-Pesa' : 
+                         payment.method === 'airtel' ? 'Airtel Money' :
+                         payment.method === 'card' ? 'Card' :
+                         payment.method === 'cash' ? 'Cash' :
+                         payment.method}
+                      </span>
                     </td>
-                    <td className="font-semibold">Ksh {payment.amount}</td>
-                    <td>{payment.phone_number || payment.card_number || '-'}</td>
+                    <td className="font-semibold">Ksh {parseFloat(payment.amount || 0).toFixed(2)}</td>
+                    <td>{payment.phone_number || payment.account_number || '-'}</td>
                     <td>
                       <div className="flex items-center gap-2">
                         {getStatusIcon(payment.status)}
@@ -138,8 +148,8 @@ export default function Payments() {
                         </span>
                       </div>
                     </td>
-                    <td>{format(new Date(payment.created_at), 'MMM dd, yyyy HH:mm')}</td>
-                    <td>{payment.sale_receipt || '-'}</td>
+                    <td>{format(new Date(payment.initiated_at), 'MMM dd, yyyy HH:mm')}</td>
+                    <td>{payment.sale_number || '-'}</td>
                   </tr>
                 ))}
               </tbody>

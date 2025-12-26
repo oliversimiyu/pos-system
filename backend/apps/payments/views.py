@@ -63,8 +63,9 @@ class PaymentViewSet(viewsets.ModelViewSet):
             payment.save()
             
             # Update sale
-            payment.sale.amount_paid += payment.amount
-            payment.sale.update_payment_status()
+            sale = payment.sale
+            sale.amount_paid += payment.amount
+            sale.update_payment_status()  # This already saves
             
             result = {'success': True, 'payment': payment}
         else:

@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { productsAPI, salesAPI } from '../services/api/endpoints'
 import { Search, Scan, ShoppingCart, Trash2, Plus, Minus, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import PaymentModal from '../components/PaymentModal'
 
 export default function POSCheckout() {
+  const navigate = useNavigate()
   const [barcode, setBarcode] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [products, setProducts] = useState([])
@@ -134,12 +136,36 @@ export default function POSCheckout() {
 
   const handlePaymentComplete = async (paymentData) => {
     try {
-      toast.success(`Sale completed! Receipt #${paymentData.receipt_number || saleId}`)
+      // Fetch the updated sale to get the sale number
+      const saleResponse = await salesAPI.getById(saleId)
+      const saleNumber = saleResponse.data.sale_number
+      const saleTotal = saleResponse.data.total
+      
+      toast.success(
+        `Payment successful! Sale #${saleNumber} - Ksh ${saleTotal}`,
+        { duration: 5000 }
+      )
+      
+      console.log('Completed sale:', saleResponse.data)
+      
+      // Clear cart and reset
       clearCart()
       setSaleId(null)
       setShowPayment(false)
+      
+      // Navigate to sales page to see the completed sale
+      setTimeout(() => {
+        const viewSale = window.confirm('Sale completed! Would you like to view all sales?')
+        if (viewSale) {
+          navigate('/sales')
+        }
+      }, 1000)
     } catch (error) {
-      toast.error('Failed to complete sale')
+      console.error('Error fetching sale details:', error)
+      toast.success('Payment successful! Sale completed')
+      clearCart()
+      setSaleId(null)
+      setShowPayment(false)
     }
   }
 

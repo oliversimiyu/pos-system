@@ -43,7 +43,17 @@ export default function Sales() {
       completed: 'badge-success',
       cancelled: 'badge-error',
     }
-    return `badge ${badges[status] || ''}`
+    return `badge ${badges[status] || 'badge-secondary'}`
+  }
+
+  const getPaymentStatusBadge = (paymentStatus) => {
+    const badges = {
+      unpaid: 'badge-error',
+      partial: 'badge-warning',
+      paid: 'badge-success',
+      refunded: 'badge-secondary',
+    }
+    return `badge ${badges[paymentStatus] || 'badge-secondary'}`
   }
 
   return (
@@ -104,7 +114,9 @@ export default function Sales() {
                   <th>Date</th>
                   <th>Items</th>
                   <th>Total</th>
+                  <th>Amount Paid</th>
                   <th>Payment Method</th>
+                  <th>Payment Status</th>
                   <th>Status</th>
                   <th>Cashier</th>
                   <th>Actions</th>
@@ -113,13 +125,19 @@ export default function Sales() {
               <tbody>
                 {sales.map((sale) => (
                   <tr key={sale.id}>
-                    <td className="font-mono font-medium">{sale.receipt_number}</td>
+                    <td className="font-mono font-medium">{sale.sale_number}</td>
                     <td>{format(new Date(sale.created_at), 'MMM dd, yyyy HH:mm')}</td>
                     <td>{sale.items?.length || 0}</td>
-                    <td className="font-semibold">Ksh {sale.total_amount}</td>
+                    <td className="font-semibold">Ksh {parseFloat(sale.total || 0).toFixed(2)}</td>
+                    <td className="font-semibold">Ksh {parseFloat(sale.amount_paid || 0).toFixed(2)}</td>
                     <td>
                       <span className="badge badge-secondary">
-                        {sale.payment_method}
+                        {sale.payment_method || 'N/A'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={getPaymentStatusBadge(sale.payment_status)}>
+                        {sale.payment_status || 'unpaid'}
                       </span>
                     </td>
                     <td>

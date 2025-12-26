@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   TrendingUp,
   Users,
+  RefreshCw,
 } from 'lucide-react'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
@@ -14,13 +15,22 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null)
   const [lowStockProducts, setLowStockProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     fetchDashboardData()
+    
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchDashboardData(true)
+    }, 30000)
+    
+    return () => clearInterval(interval)
   }, [])
 
-  const fetchDashboardData = async () => {
-    setLoading(true)
+  const fetchDashboardData = async (silent = false) => {
+    if (!silent) setLoading(true)
+    setRefreshing(true)
     try {
       const [statsResponse, lowStockResponse] = await Promise.all([
         reportsAPI.getDashboard(),
@@ -29,10 +39,15 @@ export default function Dashboard() {
       setStats(statsResponse.data)
       setLowStockProducts(lowStockResponse.data.results || lowStockResponse.data)
     } catch (error) {
-      console.error('Failed to load dashboard data')
+      console.error('Failed to load dashboard data', error)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
+  }
+
+  const handleRefresh = () => {
+    fetchDashboardData()
   }
 
   if (loading) {
@@ -72,7 +87,17 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="btn btn-secondary flex items-center gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

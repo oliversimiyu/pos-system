@@ -42,13 +42,15 @@ class SalesReportView(APIView):
             start = now.replace(hour=0, minute=0, second=0)
             end = now
         
-        # Get sales data
+        # Get sales data - include paid sales even if not marked as completed
         sales = Sale.objects.filter(
             created_at__gte=start,
             created_at__lte=end
         )
         
-        completed_sales = sales.filter(status='completed')
+        completed_sales = sales.filter(
+            Q(status='completed') | Q(payment_status='paid')
+        )
         
         # Calculate totals
         total_sales = completed_sales.count()
@@ -95,22 +97,17 @@ class SalesReportView(APIView):
             hourly_sales = []
         
         return Response({
-            'period': {
-                'start': start,
-                'end': end,
-                'label': period
-            },
-            'summary': {
-                'total_sales': total_sales,
-                'total_revenue': float(total_revenue),
-                'total_tax': float(total_tax),
-                'total_discount': float(total_discount),
-                'average_sale': float(total_revenue / total_sales) if total_sales > 0 else 0
-            },
+            'total_sales': float(total_revenue),
+            'total_transactions': total_sales,
+            'total_revenue': float(total_revenue),
+            'total_tax': float(total_tax),
+            'total_discount': float(total_discount),
+            'average_sale': float(total_revenue / total_sales) if total_sales > 0 else 0,
             'payment_methods': list(payment_methods),
             'sales_by_cashier': list(sales_by_cashier),
             'top_products': list(top_products),
-            'hourly_sales': list(hourly_sales)
+            'hourly_sales': list(hourly_sales),
+            'chart_data': [{'hour': h['hour'], 'sales': float(h['revenue'])} for h in hourly_sales] if period == 'today' else []
         })
 
 
@@ -165,14 +162,14 @@ class InventoryReportView(APIView):
         )
         
         return Response({
-            'summary': {
-                'total_products': total_products,
-                'total_stock_value': float(total_stock_value),
-                'low_stock_count': low_stock.count(),
-                'out_of_stock_count': out_of_stock,
-                'active_alerts': active_alerts.count()
-            },
+            'total_products': total_products,
+            'total_value': float(total_stock_value),
+            'total_stock_value': float(total_stock_value),
+            'low_stock_count': low_stock.count(),
+            'out_of_stock_count': out_of_stock,
+            'active_alerts_count': active_alerts.count(),
             'low_stock_items': list(low_stock),
+            'category_distribution': list(by_category),
             'by_category': list(by_category),
             'recent_movements': list(recent_movements),
             'active_alerts': list(active_alerts)
@@ -207,9 +204,9 @@ class ProfitReportView(APIView):
             from dateutil import parser
             end = parser.parse(end_date)
         
-        # Get completed sales
+        # Get completed sales - include paid sales
         sales = Sale.objects.filter(
-            status='completed',
+            Q(status='completed') | Q(payment_status='paid'),
             created_at__gte=start,
             created_at__lte=end
         )
@@ -249,18 +246,11 @@ class ProfitReportView(APIView):
         ).order_by('-profit')
         
         return Response({
-            'period': {
-                'start': start,
-                'end': end,
-                'label': period
-            },
-            'summary': {
-                'total_revenue': float(total_revenue),
-                'total_cost': float(total_cost),
-                'total_tax': float(total_tax),
-                'gross_profit': float(gross_profit),
-                'profit_margin': float(profit_margin)
-            },
+            'total_revenue': float(total_revenue),
+            'total_cost': float(total_cost),
+            'total_tax': float(total_tax),
+            'gross_profit': float(gross_profit),
+            'profit_margin': float(profit_margin),
             'product_profit': list(product_profit),
             'category_profit': list(category_profit)
         })
@@ -274,10 +264,11 @@ class DashboardStatsView(APIView):
         now = timezone.now()
         today_start = now.replace(hour=0, minute=0, second=0)
         
-        # Today's sales
+        # Today's sales - include all sales with payment_status='paid' (not just status='completed')
         today_sales = Sale.objects.filter(
-            created_at__gte=today_start,
-            status='completed'
+            created_at__gte=today_start
+        ).filter(
+            Q(status='completed') | Q(payment_status='paid')
         )
         
         today_revenue = today_sales.aggregate(total=Sum('total'))['total'] or 0
@@ -286,10 +277,14 @@ class DashboardStatsView(APIView):
         # This month
         month_start = now.replace(day=1, hour=0, minute=0, second=0)
         month_sales = Sale.objects.filter(
-            created_at__gte=month_start,
-            status='completed'
+            created_at__gte=month_start
+        ).filter(
+            Q(status='completed') | Q(payment_status='paid')
         )
         month_revenue = month_sales.aggregate(total=Sum('total'))['total'] or 0
+        
+        # Total products
+        total_products = Product.objects.filter(is_active=True).count()
         
         # Low stock alerts
         low_stock_count = StockAlert.objects.filter(status='active').count()
@@ -308,16 +303,11 @@ class DashboardStatsView(APIView):
         )
         
         return Response({
-            'today': {
-                'sales_count': today_sales_count,
-                'revenue': float(today_revenue)
-            },
-            'month': {
-                'revenue': float(month_revenue)
-            },
-            'alerts': {
-                'low_stock': low_stock_count,
-                'pending_payments': pending_payments
-            },
+            'today_sales': float(today_revenue),
+            'today_transactions': today_sales_count,
+            'month_revenue': float(month_revenue),
+            'total_products': total_products,
+            'low_stock': low_stock_count,
+            'pending_payments': pending_payments,
             'recent_sales': list(recent_sales)
         })

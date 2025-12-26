@@ -109,10 +109,10 @@ def initiate_card_payment(payment: Payment):
             payment.completed_at = timezone.now()
             payment.save()
             
-            # Update sale
-            payment.sale.amount_paid += payment.amount
-            payment.sale.update_payment_status()
-            payment.sale.save()
+            # Update sale - reload to avoid stale data
+            sale = payment.sale
+            sale.amount_paid += payment.amount
+            sale.update_payment_status()  # This already saves
             
             return {'success': True, 'payment': payment, 'simulation': True}
         

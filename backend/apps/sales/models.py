@@ -60,13 +60,30 @@ class Sale(models.Model):
     
     def update_payment_status(self):
         """Update payment status based on amount paid"""
-        if self.amount_paid >= self.total:
+        from decimal import Decimal
+        
+        # Ensure we're comparing Decimals properly
+        amount_paid = Decimal(str(self.amount_paid))
+        total = Decimal(str(self.total))
+        
+        print(f"[DEBUG] Sale {self.sale_number}: amount_paid={amount_paid}, total={total}, current_status={self.status}")
+        
+        if amount_paid >= total:
             self.payment_status = 'paid'
-        elif self.amount_paid > 0:
+            # Auto-complete sale when fully paid
+            if self.status == 'pending':
+                self.status = 'completed'
+                if not self.completed_at:
+                    from django.utils import timezone
+                    self.completed_at = timezone.now()
+                print(f"[DEBUG] Sale {self.sale_number}: Updated to completed")
+        elif amount_paid > 0:
             self.payment_status = 'partial'
         else:
             self.payment_status = 'unpaid'
+        
         self.save()
+        print(f"[DEBUG] Sale {self.sale_number}: Saved with status={self.status}, payment_status={self.payment_status}")
 
 
 class SaleItem(models.Model):
