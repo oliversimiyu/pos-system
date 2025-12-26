@@ -83,10 +83,10 @@ class SalesReportView(APIView):
             total_revenue=Sum('total')
         ).order_by('-quantity_sold')[:10]
         
-        # Sales by hour (for today)
+        # Sales by hour (for today) - SQLite compatible
         if period == 'today':
             hourly_sales = completed_sales.extra(
-                select={'hour': "EXTRACT(hour FROM created_at)"}
+                select={'hour': "CAST(strftime('%%H', created_at) AS INTEGER)"}
             ).values('hour').annotate(
                 sales_count=Count('id'),
                 revenue=Sum('total')
