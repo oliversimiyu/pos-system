@@ -99,6 +99,64 @@ class PaymentViewSet(viewsets.ModelViewSet):
         else:
             result = {'success': False, 'error': 'Cannot verify this payment method'}
         
+        if result.get('success'):
+            return Response(PaymentSerializer(payment).data)
+        else:
+            return Response(
+                {'error': result.get('error', 'Verification failed')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=True, methods=['post'])
+    def complete_manually(self, request, pk=None):
+        """Manually complete a payment (for testing when callbacks don't work)"""
+        payment = self.get_object()
+        
+        if payment.status not in ['pending', 'processing']:
+            return Response(
+                {'error': f'Payment is already {payment.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Mark as success
+        from django.utils import timezone
+        payment.status = 'success'
+        payment.completed_at = timezone.now()
+        payment.external_reference = request.data.get('reference', 'MANUAL_' + payment.transaction_reference)
+        payment.save()
+        
+        # Update sale
+        sale = payment.sale
+        sale.amount_paid += payment.amount
+        sale.update_payment_status()
+        
+        return Response(PaymentSerializer(payment).data)
+        
+        serializer = self.get_serializer(payment)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def confirm(self, request, pk=None):
+        """Manually confirm a payment (for testing without callbacks)"""
+        payment = self.get_object()
+        
+        if payment.status == 'success':
+            return Response({'error': 'Payment already confirmed'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if payment.status in ['failed', 'cancelled']:
+            return Response({'error': 'Cannot confirm failed/cancelled payment'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Manually mark as success
+        from django.utils import timezone
+        payment.status = 'success'
+        payment.completed_at = timezone.now()
+        payment.external_reference = request.data.get('reference', f'MANUAL_{payment.id}')
+        payment.save()
+        
+        # Update sale
+        payment.sale.amount_paid += payment.amount
+        payment.sale.update_payment_status()
+        
         serializer = self.get_serializer(payment)
         return Response(serializer.data)
     

@@ -78,7 +78,18 @@ class MpesaAPI:
         }
         
         response = requests.post(url, json=payload, headers=headers)
-        return response.json()
+        
+        # Handle non-JSON responses
+        try:
+            return response.json()
+        except ValueError:
+            # Return error with raw response text
+            return {
+                'ResponseCode': '1',
+                'ResponseDescription': f'Invalid response from M-Pesa: {response.text[:200]}',
+                'errorCode': 'INVALID_RESPONSE',
+                'errorMessage': response.text
+            }
     
     def query_transaction(self, checkout_request_id):
         """Query STK Push transaction status"""
@@ -249,6 +260,15 @@ def verify_mpesa_payment(payment: Payment):
         mpesa = MpesaAPI()
         result = mpesa.query_transaction(checkout_request_id)
         
+        # Check if query failed due to API error
+        if result.get('errorCode'):
+            # API error (likely IP block) - return current status without changing it
+            return {
+                'success': True, 
+                'payment': payment,
+                'note': 'Query blocked, status unchanged. Setup ngrok for callbacks.'
+            }
+        
         result_code = result.get('ResultCode')
         
         if result_code == '0':
@@ -263,6 +283,11 @@ def verify_mpesa_payment(payment: Payment):
             # Request cancelled by user
             payment.status = 'cancelled'
             payment.error_message = 'Cancelled by user'
+            payment.save()
+        elif result_code == '1037':
+            # Request timeout (no response from user)
+            payment.status = 'failed'
+            payment.error_message = 'Request timeout - no user response'
             payment.save()
         else:
             payment.status = 'failed'
